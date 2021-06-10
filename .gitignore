@@ -9,6 +9,7 @@ __pycache__/
 # Data files
 db/*.csv
 corpora/*.csv
+corpora/*.zip
 
 # C extensions
 *.so
