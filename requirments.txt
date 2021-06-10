@@ -1,0 +1,14 @@
+jupyter_contrib_nbextensions
+requests
+progressbar
+pandas
+gensim==3.8.3
+nltk
+pyLDAvis==3.2.2
+matplotlib
+vaderSentiment
+numpy
+Pillow
+wordcloud
+sklearn
+scipy
