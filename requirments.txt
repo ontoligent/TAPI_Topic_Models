@@ -12,3 +12,5 @@ Pillow
 wordcloud
 sklearn
 scipy
+plotly
+plotly_express
