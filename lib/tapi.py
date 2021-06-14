@@ -32,6 +32,53 @@ def list_dbs():
     mydir = get_config('db_dir')
     return list_prefixes(mydir)
 
+def reduce_corpora(corpora, sample_size = 10000):
+    """Legacy function; to be removed."""
+    for corpus in corpora:
+        prefix = corpus.split('/')[1].split('-')[0]
+        if prefix == 'novels':
+            sep = ','
+        else:
+            sep = '|'
+        df = pd.read_csv(corpus, sep=sep, error_bad_lines=False, header=0)
+        if df.shape[0] > sample_size:
+            df = df.sample(sample_size).copy()
+            
+        df.to_csv(f"corpora/{prefix}-tapi.csv", sep='|', index=False)
+
+def constellate_to_corpus(in_jsonl_file, out_csv_file):
+    """Legacy function. To be refactored."""
+
+    # Example files:
+    # in_file = './corpora/4c5cb65a-f26b-d753-a419-ca63e1df90f3-sampled-jsonl'
+    # out_file = 'corpora/jstor_hyperparameter-corpus.csv'
+
+    coll = pd.DataFrame(open(in_jsonl_file, 'r').readlines())
+    coll.columns = ['raw']
+
+    def get_element(doc, key):
+        rec = json.loads(doc)
+        val = None
+        try:
+            val = rec[key]
+        except:
+            pass
+        return val
+
+    coll['doc_content'] = coll.raw.apply(lambda x: get_element(x, 'abstract')).dropna()
+    coll['doc_title'] = coll.raw.apply(lambda x: get_element(x, 'title'))
+    coll['doc_url'] = coll.raw.apply(lambda x: get_element(x, 'id'))
+    coll['doc_key'] = coll.doc_url.str.replace(r'http://www.jstor.org/stable/', '', regex=False)
+    coll['doc_date'] = coll.raw.apply(lambda x: get_element(x, 'datePublished'))
+    coll['doc_year'] = coll.doc_date.apply(lambda x: int(x.split('-')[0]))
+    coll['doc_lang'] = coll.raw.apply(lambda x: get_element(x, 'language'))
+    coll['doc_tdmcat'] = coll.raw.apply(lambda x: get_element(x, 'tdmCategory'))
+    coll['doc_srccat'] = coll.raw.apply(lambda x: get_element(x, 'sourceCategory'))
+
+    coll = coll[~coll.doc_content.isna()]    
+    
+    coll.iloc[:,1:].to_csv(out_csv_file, sep='|', index=False)
+
 
 class Edition:
     """An Edition is a collection of analytical tables derived from a corpus."""   
