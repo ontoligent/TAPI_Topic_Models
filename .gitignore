@@ -10,12 +10,11 @@ __pycache__/
 # Apple
 .DS_Store
 
-# Data files
+# Data files, etc.
 db/*.csv
+db/*.zip
 corpora/*.csv
 corpora/*.jsonl
 corpora/*.zip
 corpora/*.gz
-corpora-src/*.csv
-corpora-src/*.gz
-corpora-src/*.jsonl
+corpora-src/*
