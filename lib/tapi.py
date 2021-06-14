@@ -176,6 +176,13 @@ class Edition:
         df = df.set_index('label_name')
         return df
 
+    def pyldaviz(self):
+        import pyLDAvis
+        self.viz = pyLDAvis.prepare(self.PHI.to_numpy(), 
+            self.THETA.to_numpy(), self.DTM.T.sum(), 
+            self.VOCAB.index, self.VOCAB.n)
+        return pyLDAvis.display(self.viz)
+
 if __name__ == '__main__':
 
     list_corpora()
