@@ -16,4 +16,3 @@ plotly
 plotly_express
 networkx
 pydot
-glob
