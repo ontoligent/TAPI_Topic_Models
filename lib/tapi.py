@@ -111,6 +111,7 @@ class Edition:
         try:
             corpus = pd.read_csv(corpus_file, sep=csv_sep)
             corpus.index.name = 'doc_id'
+            corpus = corpus[~corpus.doc_content.isna()] # Should have already been removed
             return corpus
         except FileNotFoundError as e:
             print(f"Corpus file {corpus_file} not found.")
