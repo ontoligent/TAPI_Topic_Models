@@ -235,7 +235,7 @@ class LDATopicModel(AbstractTopicModel):
 
         print("Extracting LDA Term-Topic Matrix.")
         self.term_topic_matrix = pd.DataFrame(self.engine.components_, 
-                                                columns=self.corpus.termlist).T
+                                                  columns=self.corpus.termlist).T
         self.term_topic_matrix.index.name = 'term_str'
         self.term_topic_matrix.columns.name = 'topic_id'
 
