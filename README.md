@@ -36,7 +36,7 @@ The notebooks in this workshop will generate a __digital analytical edition__ fr
 # Workshop Slides
 
 * [Day 1](https://docs.google.com/presentation/d/1v98_J4UErZqt6U4ut8DACBQa7aOtaBQFyl134cVGAG4/edit?usp=sharing)
-* Day 2
+* [Day 2](https://docs.google.com/presentation/d/16T7ezyKPKyQBS_JU66lsmdoq2paCii7g2dYCXs73VhU/edit?usp=sharing)
 * Day 3
 
 <!--
