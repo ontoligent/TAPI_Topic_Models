@@ -64,11 +64,13 @@ class ETACorpus():
         self.BOW = pd.merge(A, B, on=['doc_id','term_id'])
 
         print("Applying stats to VOCAB.")
+        self.VOCAB['ngram_len'] = self.VOCAB.apply(lambda x: len(x.term_str.split()), 1)
         self.VOCAB['tfidf_sum'] = self.BOW.groupby(['term_id'])['tfidf'].sum()        
+        self.VOCAB['tfidf_mean'] = self.BOW.groupby(['term_id'])['tfidf'].mean()        
         self.VOCAB['corpus_freq'] = self.BOW.groupby(['term_id'])['n'].sum()
         self.VOCAB['prior_prob'] = self.VOCAB['corpus_freq'] / self.VOCAB['corpus_freq'].sum()
 
-        return self
+        return self # For chaining
 
     def get_doc_term_matrix(self, bow_col='n'):
         dtm = self.BOW[bow_col].to_frame().unstack(fill_value=0)
@@ -99,7 +101,7 @@ class AbstractTopicModel(ABC):
     doc_topic_matrix:pd.DataFrame = None
     term_topic_matrix:pd.DataFrame = None
     topic:pd.DataFrame = None
-    hca_pdist_metric:str = 'euclidean'
+    hca_pdist_metric:str = 'cosine'
     hca_linkage_method:str = 'ward'
 
     @abstractmethod
@@ -108,7 +110,7 @@ class AbstractTopicModel(ABC):
 
     def _create_topic_label(self, topic_id, term_topic_matrix, 
                             ascending=False, n_terms=7):
-        topic_label = ', '.join(term_topic_matrix[topic_id]\
+        topic_label = f"{topic_id}: " + ', '.join(term_topic_matrix[topic_id]\
                         .sort_values(ascending=ascending).head(n_terms)\
                         .index.to_list())
         return topic_label
@@ -162,19 +164,21 @@ class NMFTopicModel(AbstractTopicModel):
     nmf_max_iter:int = 1000
     nmf_alpha:float = .1
     nmf_l1_ratio:float = .5
-    nmf_beta_loss = 'kullback-leibler'
-    nmf_solver = 'mu'
-    nmf_random_state = 1
+    nmf_beta_loss:str = 'frobenius' #'kullback-leibler'
+    nmf_solver:str = 'cd'
+    nmf_random_state:int = 1
+    nmf_init:str = 'nndsvd'
 
     def generate_model(self):
 
         print("Initializing NMF Engine.")
         self.engine = NMF(
             n_components = self.n_topics, 
-            random_state = self.nmf_random_state, 
-            beta_loss = self.nmf_beta_loss, 
+            init = self.nmf_init,
             solver = self.nmf_solver, 
+            beta_loss = self.nmf_beta_loss, 
             max_iter = self.nmf_max_iter, 
+            random_state = self.nmf_random_state, 
             alpha = self.nmf_alpha,
             l1_ratio = self.nmf_l1_ratio)
 
@@ -184,14 +188,16 @@ class NMFTopicModel(AbstractTopicModel):
         print("Extracting NMF Doc-Topic Matrix.")
         self.doc_topic_matrix = pd.DataFrame(self.model)
         self.doc_topic_matrix.index.name = 'doc_id'
+        self.doc_topic_matrix.columns.name = 'topic_id'
 
         print("Extracting NMF Term-Topic Matrix.")
         self.term_topic_matrix = pd.DataFrame(self.engine.components_, 
-                                                    columns=self.corpus.termlist).T
+                                                columns=self.corpus.termlist).T
+        self.term_topic_matrix.index.name = 'term_str'                                                    
+        self.term_topic_matrix.columns.name = 'topic_id'                                                    
 
         print("Extracting NMF Topics.")
-        self.topic = self.doc_topic_matrix.sum()\
-            .to_frame().rename(columns={0:'preponderance'})
+        self.topic = self.doc_topic_matrix.sum().to_frame('preponderance')
         self.topic.index.name = 'topic_id'
         self.topic['label'] = self.topic.apply(lambda x: \
             self._create_topic_label(x.name, self.term_topic_matrix), 1)
@@ -204,10 +210,10 @@ from sklearn.decomposition import LatentDirichletAllocation
 @dataclass 
 class LDATopicModel(AbstractTopicModel):
 
-    lda_max_iter:int = 500
-    lda_learning_method = 'online'
-    lda_learning_offset = 50.
-    lda_random_state = 0
+    lda_max_iter:int = 10
+    lda_learning_method:str = 'online'
+    lda_learning_offset:float = 50.
+    lda_random_state:int = 0
 
     def generate_model(self):
 
@@ -225,15 +231,16 @@ class LDATopicModel(AbstractTopicModel):
         print("Extracting LDA Doc-Topic Matrix.")
         self.doc_topic_matrix = pd.DataFrame(self.model)
         self.doc_topic_matrix.index.name = 'doc_id'
+        self.doc_topic_matrix.columns.name = 'topic_id'
 
         print("Extracting LDA Term-Topic Matrix.")
         self.term_topic_matrix = pd.DataFrame(self.engine.components_, 
-                                                  columns=self.corpus.termlist).T
-        self.term_topic_matrix.index.name = 'term_id'
+                                                columns=self.corpus.termlist).T
+        self.term_topic_matrix.index.name = 'term_str'
+        self.term_topic_matrix.columns.name = 'topic_id'
 
         print("Extracting LDA Topics.")
-        self.topic = self.doc_topic_matrix.sum()\
-            .to_frame().rename(columns={0:'preponderance'})
+        self.topic = self.doc_topic_matrix.sum().to_frame('preponderance')
         self.topic.index.name = 'topic_id'
         self.topic['label'] = self.topic.apply(lambda x: \
             self._create_topic_label(x.name, self.term_topic_matrix), 1)
@@ -245,7 +252,7 @@ from sklearn.decomposition import PCA
 @dataclass
 class PCATopicModel(AbstractTopicModel):
     
-    pca_n_components = 10
+    pca_n_components:int = 10
         
     def generate_model(self):
 
@@ -266,8 +273,7 @@ class PCATopicModel(AbstractTopicModel):
         self.term_topic_matrix.index.name = 'term_id'  
         
         print("Extract PCA Topics (i.e. Components).")
-        self.topic = pd.DataFrame(self.engine.explained_variance_)\
-            .rename(columns={0:'preponderance'})
+        self.topic = pd.DataFrame(self.engine.explained_variance_, columns="preponderance")
         self.topic.index.name = 'topic_id'
         
         self.topic['label'] = self.topic\
@@ -285,9 +291,9 @@ from sklearn.decomposition import TruncatedSVD as SVD
 @dataclass
 class SVDTopicModel(AbstractTopicModel):
     
-    n_components = 10
-    n_iter=7
-    random_state=42
+    n_components:int = 10
+    n_iter:int = 7
+    random_state:int = 42
         
     def generate_model(self):
 
@@ -310,8 +316,7 @@ class SVDTopicModel(AbstractTopicModel):
         self.term_topic_matrix.index.name = 'term_id'  
         
         print("Extract SVD Topics (i.e. Components).")
-        self.topic = pd.DataFrame(self.engine.explained_variance_)\
-            .rename(columns={0:'preponderance'})
+        self.topic = pd.DataFrame(self.engine.explained_variance_, columns='preponderance')
         self.topic.index.name = 'topic_id'
         
         self.topic['label'] = self.topic\

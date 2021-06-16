@@ -1,8 +1,12 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 from glob import glob
 import os
 import configparser
 import pandas as pd
 import numpy as np
+from lib import etal
 
 lib_dir = './lib' # Can replace with ENV variable
 
@@ -132,6 +136,8 @@ class Edition:
                 print(table)
             except FileNotFoundError as e:
                 print(table + ' not found')
+            except KeyError as e:
+                print(table + ' empty or something')
 
         # Improve this  
         self.THETA.columns.name = 'topic_id'
@@ -183,6 +189,74 @@ class Edition:
             self.THETA.to_numpy(), self.DTM.T.sum(), 
             self.VOCAB.index, self.VOCAB.n)
         return pyLDAvis.display(self.viz)
+
+    ########### ETAL INTEGRATION ##########################
+
+    def import_corpus(self, csv_sep=None):
+        cfg = get_config_object()
+        corpora_dir = cfg['DEFAULT']['corpora_dir']
+        if not csv_sep:
+            csv_sep = cfg['DEFAULT']['corpora_csv_sep']
+        corpus_file = f'{corpora_dir}/{self.data_prefix}-tapi.csv'
+        try:
+            self.corpus = pd.read_csv(corpus_file, sep=csv_sep)
+            self.corpus.index.name = 'doc_id'
+            self.corpus = self.corpus[~self.corpus.doc_content.isna()] # Should have already been removed
+        except FileNotFoundError as e:
+            print(f"Corpus file {corpus_file} not found.")
+        return self
+
+    def create_bow(self):
+        self.etacorpus = etal.ETACorpus(self.corpus, ngram_min=self.ngram_range[0], ngram_max=self.ngram_range[1])
+        self.etacorpus.create_bow()
+        self.VOCAB = self.etacorpus.VOCAB
+        self.BOW = self.etacorpus.BOW
+        return self
+
+    def create_nmf(self):
+        self.nmf = etal.NMFTopicModel(self.etacorpus, 
+            n_topics=self.n_topics).generate_model()
+        self.THETA_NMF = self.nmf.doc_topic_matrix
+        self.PHI_NMF = self.nmf.term_topic_matrix
+        self.TOPICS_NMF = self.nmf.topic
+        return self
+
+    def create_lda(self):
+        self.lda = etal.LDATopicModel(self.etacorpus, 
+            n_topics=self.n_topics).generate_model()
+        self.THETA = self.lda.doc_topic_matrix
+        self.PHI = self.lda.term_topic_matrix
+        self.TOPICS = self.lda.topic
+        return self
+
+    def export_tables(self):
+
+        # Change names to conform to TAPI naming conventions (for now)
+        
+        self.VOCAB = self.VOCAB.reset_index(drop=True).set_index('term_str')
+        self.VOCAB = self.VOCAB.rename(columns={'corpus_freq':'n', 'prior_prob':'p'})
+        self.VOCAB['h'] = self.VOCAB.p * np.log2(1/self.VOCAB.p)
+
+        self.TOPICS = self.TOPICS.rename(columns={'preponderance':'doc_weight_sum', 'label':'topwords'})
+
+        self.TOPICS_NMF = self.TOPICS_NMF.rename(columns={'preponderance':'doc_weight_sum', 'label':'topwords'})
+
+        self.THETA.index.name = 'doc_id'
+        self.THETA.columns.name = 'topic_id'
+
+        self.THETA_NMF.index.name = 'doc_id'
+        self.THETA_NMF.columns.name = 'topic_id'
+
+        self.PHI = self.PHI.T
+        self.PHI.columns.name = 'term_str'
+        self.PHI.index.name = 'topic_id'
+
+        self.PHI_NMF = self.PHI_NMF.T
+        self.PHI_NMF.columns.name = 'term_str'
+        self.PHI_NMF.index.name = 'topic_id'
+
+        self.save_tables()
+    
 
 if __name__ == '__main__':
 
