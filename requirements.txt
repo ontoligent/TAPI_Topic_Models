@@ -14,5 +14,5 @@ sklearn
 scipy
 plotly
 plotly_express
-networkx
 pydot
+prince
