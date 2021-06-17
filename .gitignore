@@ -19,3 +19,7 @@ corpora/*.jsonl
 corpora/*.zip
 corpora/*.gz
 corpora-src/*
+corpora-tmp/*
+
+# Added by VSCode
+exhibits/critical-path.dot
