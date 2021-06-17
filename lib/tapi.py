@@ -20,6 +20,8 @@ def get_config(key, heading='DEFAULT'):
     return cfg[heading][key]
 
 def list_prefixes(dir='corpora'):
+    cwd = os.getcwd()
+    print(cwd)
     prefixes = []
     for filename in glob(f"./{dir}/*.csv"):
     # for filename in os.listdir(f"./{dir}/*.csv"):
@@ -122,6 +124,8 @@ class Edition:
             return False
 
     def save_tables(self):
+        cwd = os.getcwd()
+        print(cwd)
         db_dir = get_config('db_dir')
         for table in self.tables.keys():
             getattr(self, table).to_csv(f"{db_dir}/{self.data_prefix}-{table}.csv", 
