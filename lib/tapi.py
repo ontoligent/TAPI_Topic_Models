@@ -218,16 +218,14 @@ class Edition:
         return self
 
     def create_nmf(self):
-        self.nmf = etal.NMFTopicModel(self.etacorpus, 
-            n_topics=self.n_topics).generate_model()
+        self.nmf = etal.NMFTopicModel(self.etacorpus, n_topics=self.n_topics).generate_model()
         self.THETA_NMF = self.nmf.doc_topic_matrix
         self.PHI_NMF = self.nmf.term_topic_matrix
         self.TOPICS_NMF = self.nmf.topic
         return self
 
     def create_lda(self):
-        self.lda = etal.LDATopicModel(self.etacorpus, 
-            n_topics=self.n_topics).generate_model()
+        self.lda = etal.LDATopicModel(self.etacorpus, n_topics=self.n_topics).generate_model()
         self.THETA = self.lda.doc_topic_matrix
         self.PHI = self.lda.term_topic_matrix
         self.TOPICS = self.lda.topic
@@ -258,6 +256,8 @@ class Edition:
         self.PHI_NMF = self.PHI_NMF.T
         self.PHI_NMF.columns.name = 'term_str'
         self.PHI_NMF.index.name = 'topic_id'
+
+        self.LABELS = self.corpus[set(self.corpus.columns.tolist()) - set(['doc_key', 'doc_content', 'doc_original'])]
 
         self.save_tables()
     
