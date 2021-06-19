@@ -154,6 +154,8 @@ class Edition:
         self.n_topics = len(self.TOPICS)
         self.topic_cols = [t for t in range(self.n_topics)]
 
+        return self
+
     def get_table(self, table):
         db_dir = get_config('db_dir')
 
