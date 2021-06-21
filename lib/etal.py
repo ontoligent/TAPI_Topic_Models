@@ -120,7 +120,6 @@ class AbstractTopicModel(ABC):
             .stack().sort_values(ascending=False)\
             .to_frame('corr').head(n_pairs)
         self.term_net.index.names = ['term1', 'term2']
-        # self.term_net = self.term_net.rename(columns={0:'corr'})
         self.term_net = self.term_net.reset_index()
 
         self.term_net = self.term_net.loc[self.term_net.term1 != self.term_net.term2]
