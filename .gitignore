@@ -20,6 +20,7 @@ corpora/*.zip
 corpora/*.gz
 corpora-src/*
 corpora-tmp/*
+experimental/*
 
 # Added by VSCode
 exhibits/critical-path.dot
