@@ -134,13 +134,16 @@ class Edition:
     def get_tables(self):
         db_dir = get_config('db_dir')  
         for table in self.tables.keys():
+            table_file = f"{db_dir}/{self.data_prefix}-{table}.csv"
+            print(table_file)
             try:
-                setattr(self, table, pd.read_csv(f"{db_dir}/{self.data_prefix}-{table}.csv")\
+                setattr(self, table, pd.read_csv(table_file)\
                     .set_index(self.tables[table]['id'])) 
                 print(table)
             except FileNotFoundError as e:
                 print(table + ' not found')
             except KeyError as e:
+                print(e)
                 print(table + ' empty or something')
 
         # Improve this  
